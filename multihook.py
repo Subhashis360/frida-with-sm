@@ -5,7 +5,13 @@ import sys
 
 def on_message(message, payload):
     if message['type'] == 'send':
-        print(f"Encountered: {message['payload']}")
+        with open('log.txt', 'a', encoding='utf-8', errors='replace') as file:
+            file.write(f"{message['payload']}\n")
+            print(f"Encountered: {message['payload']}")
+    else:
+        with open('log.txt', 'a', encoding='utf-8', errors='replace') as file:
+            file.write(f"{message}\n")
+            print(message)
 
 
 def list_apps(device_id):
@@ -35,7 +41,7 @@ def select_package(apps):
 
 
 
-def start_frida_script(app_package, js_file1, js_file2):
+def start_frida_script(app_package, js_files):
     try:
         device = frida.get_usb_device(1)
 
@@ -44,18 +50,15 @@ def start_frida_script(app_package, js_file1, js_file2):
         time.sleep(1)
         process = device.attach(pid)
 
-        with open(js_file1, 'r') as file:
-            script_code = file.read()
-        script1 = process.create_script(script_code)
+        scripts = []
 
-        with open(js_file2, 'r') as file:
-            script_code = file.read()
-        script2 = process.create_script(script_code)
-
-        script1.on('message', on_message)
-        script2.on('message', on_message)
-        script1.load()
-        script2.load()
+        for js_file in js_files:
+            with open(js_file, 'r') as file:
+                script_code = file.read()
+            script = process.create_script(script_code)
+            script.on('message', on_message)
+            script.load()
+            scripts.append(script)
 
         sys.stdin.read()
             
@@ -85,10 +88,9 @@ def main():
     app_package_name = select_package(apps)
     print("Hooking started with pakage => " + app_package_name)
 
-    sslbypass = "sslbypass.js"
-    rootbypass = "antiroot.js"
+    js_files = ["AntiDebug.js", "hash.js", "crypto.js"]
 
-    start_frida_script(app_package_name, sslbypass, rootbypass)
+    start_frida_script(app_package_name, js_files)
 
 
 if __name__ == "__main__":
