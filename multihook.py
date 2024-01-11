@@ -46,7 +46,6 @@ def start_frida_script(app_package, js_files):
         device = frida.get_usb_device(1)
 
         pid = device.spawn([app_package])
-        device.resume(pid)
         time.sleep(1)
         process = device.attach(pid)
 
@@ -60,6 +59,7 @@ def start_frida_script(app_package, js_files):
             script.load()
             scripts.append(script)
 
+        device.resume(pid)
         sys.stdin.read()
             
             
