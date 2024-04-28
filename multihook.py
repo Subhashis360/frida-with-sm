@@ -44,25 +44,19 @@ def select_package(apps):
 def start_frida_script(app_package, js_files):
     try:
         device = frida.get_usb_device(1)
-
         pid = device.spawn([app_package])
-        time.sleep(1)
         process = device.attach(pid)
-
-        scripts = []
-
+        scripts = ""
         for js_file in js_files:
             with open(js_file, 'r') as file:
                 script_code = file.read()
-            script = process.create_script(script_code)
-            script.on('message', on_message)
-            script.load()
-            scripts.append(script)
-
+                scripts += script_code
+        script = process.create_script(scripts)
+        script.on('message', on_message)
+        script.load()
         device.resume(pid)
         sys.stdin.read()
-            
-            
+        
     except frida.ServerNotRunningError:
         print("Frida server not running on the device. Please start Frida server.")
     except frida.TransportError:
