@@ -1,55 +1,38 @@
-setTimeout(function(){
-    Java.perform(function (){
-    	console.log("");
-	    console.log("[.] Cert Pinning Bypass/Re-Pinning");
+var do_dlopen = null;
+var call_constructor = null;
+var so_library = "libflutter.so"
+Process.findModuleByName('linker64').enumerateSymbols().forEach(function(symbol){
+    if(symbol.name.indexOf("do_dlopen") >= 0){
+        do_dlopen = symbol.address;
+    } else if (symbol.name.indexOf("call_constructor") >= 0){
+        call_constructor = symbol.address;
+    }
+})
 
-	    var CertificateFactory = Java.use("java.security.cert.CertificateFactory");
-	    var FileInputStream = Java.use("java.io.FileInputStream");
-	    var BufferedInputStream = Java.use("java.io.BufferedInputStream");
-	    var X509Certificate = Java.use("java.security.cert.X509Certificate");
-	    var KeyStore = Java.use("java.security.KeyStore");
-	    var TrustManagerFactory = Java.use("javax.net.ssl.TrustManagerFactory");
-	    var SSLContext = Java.use("javax.net.ssl.SSLContext");
+var lib_loaded = 0;
+Interceptor.attach(do_dlopen, function(){
+    var library_path = this.context.x0.readCString();
+    if(library_path.indexOf(so_library) >= 0){
+        Interceptor.attach(call_constructor, function(){
+            if(lib_loaded == 0){
+                var native_mod = Process.findModuleByName(so_library);
+                // console.log(library is loaded at ${native_mod.base});
+                ssl_bypass(native_mod.base)
+            }
+            lib_loaded = 1;
+        })
+    }
+})
 
-	    // Load CAs from an InputStream
-	    console.log("[+] Loading our CA...")
-	    var cf = CertificateFactory.getInstance("X.509");
-	    
-	    try {
-	    	var fileInputStream = FileInputStream.$new("/data/local/tmp/cert-der.crt");
-	    }
-	    catch(err) {
-	    	console.log("[o] " + err);
-	    }
-	    
-	    var bufferedInputStream = BufferedInputStream.$new(fileInputStream);
-	  	var ca = cf.generateCertificate(bufferedInputStream);
-	    bufferedInputStream.close();
 
-		var certInfo = Java.cast(ca, X509Certificate);
-	    console.log("[o] Our CA Info: " + certInfo.getSubjectDN());
+function ssl_bypass(base){
+// 0x3e0f74 find and chnage the offset
+Interceptor.attach(base.add(0x3e0f74), {
+    onLeave: function(retval) {
+        console.log("BYPASSING SSL")
+        retval.replace(0x1);
+    }
+})
 
-	    // Create a KeyStore containing our trusted CAs
-	    console.log("[+] Creating a KeyStore for our CA...");
-	    var keyStoreType = KeyStore.getDefaultType();
-	    var keyStore = KeyStore.getInstance(keyStoreType);
-	    keyStore.load(null, null);
-	    keyStore.setCertificateEntry("ca", ca);
-	    
-	    // Create a TrustManager that trusts the CAs in our KeyStore
-	    console.log("[+] Creating a TrustManager that trusts the CA in our KeyStore...");
-	    var tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
-	    var tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
-	    tmf.init(keyStore);
-	    console.log("[+] Our TrustManager is ready...");
 
-	    console.log("[+] Hijacking SSLContext methods now...")
-	    console.log("[-] Waiting for the app to invoke SSLContext.init()...")
-
-	   	SSLContext.init.overload("[Ljavax.net.ssl.KeyManager;", "[Ljavax.net.ssl.TrustManager;", "java.security.SecureRandom").implementation = function(a,b,c) {
-	   		console.log("[o] App invoked javax.net.ssl.SSLContext.init...");
-	   		SSLContext.init.overload("[Ljavax.net.ssl.KeyManager;", "[Ljavax.net.ssl.TrustManager;", "java.security.SecureRandom").call(this, a, tmf.getTrustManagers(), c);
-	   		console.log("[+] SSLContext initialized with our custom TrustManager!");
-	   	}
-    });
-},0);
+}
