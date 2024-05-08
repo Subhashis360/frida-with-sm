@@ -34,7 +34,7 @@ Frida server in windows inject runtime >>
 4. now download firda with python ( pip install frida && pip install frida-tools )
 5. locate the directory whre frida.exe stored and add the directory in env variable
 6. commands => ( frida -U -f pakage.name -l .\devolopermode.js -l .\AntiDebug.js -l .\sslbypass.js -l .\antiroot.js )
-7. commands to save data => ( frida -U -f pakage.name -l .\devolopermode.js -l .\AntiDebug.js -l .\sslbypass.js -l .\antiroot.js -l crypto.js 2>&1 | tee sm.txt ) 
+7. commands to save data => ( frida -U -f com.ak.ta.dainikbhaskar.activity -l .\developer\node.js -l .\AntiDebug.js -l .\sslbypass.js -l .\antiroot.js -l crypto.js 2>&1 | tee sm.txt ) 
 
 
 
