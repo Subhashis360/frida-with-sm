@@ -37,6 +37,16 @@ Frida server in windows inject runtime >>
 7. commands to save data => ( frida -U -f com.ak.ta.dainikbhaskar.activity -l .\developer\node.js -l .\AntiDebug.js -l .\sslbypass.js -l .\antiroot.js -l crypto.js 2>&1 | tee sm.txt ) 
 
 
+Method 3 > 
+Frida attach with Pid >>
+1. download frida server from Github ( arm 64 for mine yours can be diff )
+2. extract > rename > give permisson > send to > root directory > cd /data/local/tmp
+3. now start the server ( ./frida )
+4. now download firda with python ( pip install frida && pip install frida-tools )
+5. locate the directory whre frida.exe stored and add the directory in env variable
+6. command 1 => ( adb shell pidof example.pakage.name ) to extract the pid
+7. commands to attach with frida => ( frida -U -p 12345 -l .\myscript.js )
+
 
 
 Useful adb commands >
